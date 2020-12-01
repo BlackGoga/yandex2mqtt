@@ -15,13 +15,7 @@ const device = require('./device');
 const fs = require('fs');
 const app = express();
 const https = require('https');
-const privateKey = fs.readFileSync(config.https.privateKey, 'utf8');
-const certificate = fs.readFileSync(config.https.certificate, 'utf8');
-const credentials = {
-    key: privateKey,
-    cert: certificate
-};
-const httpsServer = https.createServer(credentials, app);
+const http = require('http');
 global.devices = [];
 
 if (config.devices) {
@@ -74,8 +68,24 @@ app.get('/provider/v1.0/user/devices', routes.user.devices);
 app.post('/provider/v1.0/user/devices/query', routes.user.query);
 app.post('/provider/v1.0/user/devices/action', routes.user.action);
 app.post('/provider/v1.0/user/unlink', routes.user.unlink);
-httpsServer.listen(config.https.port);
 
+var server;
+
+if (config.mode == 'http')
+{
+    server = http.createServer(app);
+    server.listen(config.http.port);    
+}
+else if (config.mode == 'https')
+{
+    privateKey = fs.readFileSync(config.https.privateKey, 'utf8');
+    certificate = fs.readFileSync(config.https.certificate, 'utf8');
+    server = https.createServer({
+        key: privateKey,
+        cert: certificate
+    }, app);
+    server.listen(config.https.port);
+}
 
 function findDevIndex(arr, elem) {
     for (var i = 0; i < arr.length; i++) {
